@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -18,6 +18,8 @@ export default function Earth() {
     earthRef.current.rotation.y += delta * 0.035;
   });
 
+  const earth = useMemo(() => scene.clone(), [scene]);
+
   return (
     <group
       ref={earthRef}
@@ -25,11 +27,11 @@ export default function Earth() {
       rotation={[0.2, 0.4, 0]}
       scale={18}
     >
-      <primitive object={scene.clone()} />
+      <primitive object={earth} />
 
       {/* Atmospheric Glow */}
       <mesh scale={1.08}>
-        <sphereGeometry args={[1, 64, 64]} />
+        <sphereGeometry args={[1, 24, 24]} />
         <meshBasicMaterial
           color="#6bb8ff"
           transparent
@@ -40,7 +42,7 @@ export default function Earth() {
 
       {/* Outer Glow */}
       <mesh scale={1.18}>
-        <sphereGeometry args={[1, 64, 64]} />
+        <sphereGeometry args={[1, 24, 24]} />
         <meshBasicMaterial
           color="#4da6ff"
           transparent

@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import Keyboard from "@/component/Interactive3D/Keyboard";
 import Scene from "@/component/Interactive3D/Scene";
+import ScreenController from "@/component/Interactive3D/ScreenController";
 
 import { Canvas } from "@react-three/fiber";
 
@@ -16,9 +17,22 @@ export default function Interactive3D() {
       className="relative h-screen w-full overflow-hidden bg-black"
     >
       <Keyboard>
-        <Canvas shadows>
+        <Canvas
+          gl={{
+            antialias: false,
+            powerPreference: "high-performance",
+          }}
+          shadows
+        >
           <Scene gameStarted={started} />
         </Canvas>
+        <Keyboard>
+          <Canvas shadows>
+            <Scene gameStarted={started} />
+          </Canvas>
+
+          {started && <ScreenController />}
+        </Keyboard>
       </Keyboard>
 
       {!started && (
@@ -33,7 +47,7 @@ export default function Interactive3D() {
               gap-8
               rounded-3xl
               border border-white/10
-              bg-white/[0.04]
+              bg-white/4
               px-16
               py-24
               text-center

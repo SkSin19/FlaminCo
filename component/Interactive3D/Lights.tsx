@@ -9,8 +9,8 @@ export default function Lights() {
         intensity={4.5}
         color="#fff8ea"
         position={[25, 30, 15]}
-        shadow-mapSize-width={4096}
-        shadow-mapSize-height={4096}
+        shadow-mapSize-width={512}
+        shadow-mapSize-height={512}
         shadow-camera-near={1}
         shadow-camera-far={150}
         shadow-camera-left={-50}

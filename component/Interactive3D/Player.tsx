@@ -12,6 +12,7 @@ import * as THREE from "three";
 import { playerPosition, playerRotation } from "./PlayerRef";
 import Character from "./Character";
 import { Controls } from "./Keyboard";
+import { playerInput } from "./PlayerInput";
 
 export default function Player() {
   const body = useRef<RapierRigidBody>(null);
@@ -29,12 +30,24 @@ export default function Player() {
 
     const keys = getKeys();
 
+    const forward = keys.forward || playerInput.moveY > 0;
+
+    const backward = keys.backward || playerInput.moveY < 0;
+
+    const left = keys.left || playerInput.moveX < 0;
+
+    const right = keys.right || playerInput.moveX > 0;
+
+    const jump = keys.jump || playerInput.jump;
+
+    const run = keys.run || playerInput.run;
+
     const direction = new THREE.Vector3();
 
-    if (keys.forward) direction.z += 1;
-    if (keys.backward) direction.z -= 1;
-    if (keys.left) direction.x += 1;
-    if (keys.right) direction.x -= 1;
+    if (forward) direction.z += 1;
+    if (backward) direction.z -= 1;
+    if (left) direction.x += 1;
+    if (right) direction.x -= 1;
 
     if (direction.lengthSq() > 0) {
       direction.normalize();
@@ -65,7 +78,7 @@ export default function Player() {
         move.normalize();
       }
 
-      const speed = keys.run ? SPRINT : SPEED;
+      const speed = run ? SPRINT : SPEED;
 
       velocity.current.lerp(move.multiplyScalar(speed), 0.15);
 
@@ -109,7 +122,7 @@ export default function Player() {
     }
 
     // Jump
-    if (keys.jump) {
+    if (jump) {
       const current = body.current.linvel();
 
       if (Math.abs(current.y) < 0.05) {

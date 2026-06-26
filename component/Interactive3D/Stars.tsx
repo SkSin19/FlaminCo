@@ -5,7 +5,7 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-const STAR_COUNT = 12000;
+const STAR_COUNT = 1500;
 const STAR_RADIUS = 900;
 
 export default function Stars() {
