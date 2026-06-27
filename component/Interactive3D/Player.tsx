@@ -16,6 +16,7 @@ import { playerInput } from "./PlayerInput";
 
 export default function Player() {
   const body = useRef<RapierRigidBody>(null);
+  const grounded = useRef(false);
 
   const [, getKeys] = useKeyboardControls<Controls>();
 
@@ -84,6 +85,7 @@ export default function Player() {
 
       const current = body.current.linvel();
 
+      // Don't overwrite Rapier if we're blocked
       body.current.setLinvel(
         {
           x: velocity.current.x,
@@ -124,8 +126,11 @@ export default function Player() {
     // Jump
     if (jump) {
       const current = body.current.linvel();
+      const translation = body.current.translation();
 
-      if (Math.abs(current.y) < 0.05) {
+      grounded.current = Math.abs(current.y) < 0.1 && translation.y <= 1.05;
+
+      if (jump && grounded.current) {
         body.current.setLinvel(
           {
             x: current.x,
@@ -154,7 +159,7 @@ export default function Player() {
     <RigidBody
       ref={body}
       colliders={false}
-      position={[0, 1.2, 0]}
+      position={[0, 0.95, 0]}
       mass={1}
       lockRotations
     >

@@ -9,24 +9,22 @@ export default function Lights() {
         intensity={4.5}
         color="#fff8ea"
         position={[25, 30, 15]}
-        shadow-mapSize-width={512}
-        shadow-mapSize-height={512}
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
         shadow-camera-near={1}
-        shadow-camera-far={150}
-        shadow-camera-left={-50}
-        shadow-camera-right={50}
-        shadow-camera-top={50}
-        shadow-camera-bottom={-50}
-        shadow-bias={-0.00008}
+        shadow-camera-far={500}
+        shadow-camera-left={-250}
+        shadow-camera-right={250}
+        shadow-camera-top={250}
+        shadow-camera-bottom={-250}
+        shadow-bias={-0.00005}
       />
 
       {/* Extremely weak ambient */}
       <ambientLight intensity={0.08} color="#1b2236" />
 
       {/* Earth bounce light */}
-      <hemisphereLight
-        args={["#6ea8ff", "#0a0a0a", 0.18]}
-      />
+      <hemisphereLight args={["#6ea8ff", "#0a0a0a", 0.18]} />
 
       {/* Blue rim light */}
       <directionalLight
