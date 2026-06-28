@@ -8,7 +8,6 @@ export enum Controls {
   left = "left",
   right = "right",
   jump = "jump",
-  run = "run",
 }
 
 const keyboardMap = [
@@ -17,7 +16,6 @@ const keyboardMap = [
   { name: Controls.left, keys: ["KeyA", "ArrowLeft"] },
   { name: Controls.right, keys: ["KeyD", "ArrowRight"] },
   { name: Controls.jump, keys: ["Space"] },
-  { name: Controls.run, keys: ["ShiftLeft"] },
 ];
 
 export default function Keyboard({

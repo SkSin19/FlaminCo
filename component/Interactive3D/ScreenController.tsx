@@ -6,10 +6,9 @@ import { playerInput } from "./PlayerInput";
 type Props = {
   onMove?: (x: number, y: number) => void;
   onJump?: (pressed: boolean) => void;
-  onSprint?: (pressed: boolean) => void;
 };
 
-export default function ScreenController({ onMove, onJump, onSprint }: Props) {
+export default function ScreenController({ onMove, onJump }: Props) {
   const [mobile, setMobile] = useState(false);
 
   useEffect(() => {
@@ -71,9 +70,9 @@ export default function ScreenController({ onMove, onJump, onSprint }: Props) {
             onPointerDown={() => pressMove(-1, 0)}
             onPointerUp={stopMove}
             onPointerLeave={stopMove}
-            className="absolute left-2 top-1/2 h-14 w-14 -translate-y-1/2 rounded-xl bg-cyan-500/20 text-2xl text-cyan-100 transition active:scale-90"
+            className="absolute left-2 top-1/2 h-14 w-14 -translate-y-1/2 rounded-xl bg-cyan-500/20 text-2xl -rotate-90 text-cyan-100 transition active:scale-90"
           >
-            ◀
+            ▲
           </button>
 
           {/* RIGHT */}
@@ -81,9 +80,9 @@ export default function ScreenController({ onMove, onJump, onSprint }: Props) {
             onPointerDown={() => pressMove(1, 0)}
             onPointerUp={stopMove}
             onPointerLeave={stopMove}
-            className="absolute right-2 top-1/2 h-14 w-14 -translate-y-1/2 rounded-xl bg-cyan-500/20 text-2xl text-cyan-100 transition active:scale-90"
+            className="absolute right-2 top-1/2 h-14 w-14 -translate-y-1/2 rounded-xl rotate-90 bg-cyan-500/20 text-2xl text-cyan-100 transition active:scale-90"
           >
-            ▶
+            ▲
           </button>
 
           <div className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-300/40 bg-cyan-400/20" />
@@ -104,21 +103,6 @@ export default function ScreenController({ onMove, onJump, onSprint }: Props) {
             className="h-20 w-20 rounded-full border border-cyan-300/40 bg-cyan-500/20 text-lg font-bold tracking-wider text-white backdrop-blur-xl shadow-[0_0_25px_rgba(0,255,255,0.22)] transition hover:scale-105 active:scale-90"
           >
             ↑
-          </button>
-
-          {/* Sprint */}
-          <button
-            onPointerDown={() => {
-              playerInput.run = true;
-              onSprint?.(true);
-            }}
-            onPointerUp={() => {
-              playerInput.run = false;
-              onSprint?.(false);
-            }}
-            className="h-20 w-20 rounded-full border border-amber-300/40 bg-amber-500/20 text-sm font-bold tracking-[0.2em] text-white backdrop-blur-xl shadow-[0_0_25px_rgba(255,180,0,0.22)] transition hover:scale-105 active:scale-90"
-          >
-            RUN
           </button>
         </div>
       </div>

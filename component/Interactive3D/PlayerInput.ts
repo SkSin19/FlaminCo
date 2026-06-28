@@ -5,5 +5,4 @@ export const playerInput = {
   moveY: 0,
 
   jump: false,
-  run: false,
 };

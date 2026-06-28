@@ -11,19 +11,18 @@ import Stars from "./Stars";
 import ThirdPersonCamera from "./ThirdPersonCamera";
 import Player from "./Player";
 
-import LandingAstronaut from "./LandingAstronaut";
+import CinematicAstronaut from "./CinematicAstronaut";
 import LandingCamera from "./LandingCamera";
+
+import { Preload } from "@react-three/drei";
 
 type Props = {
   progress: number;
   started: boolean;
+  onExit: () => void;
 };
 
-export default function Scene({
-  progress,
-
-  started,
-}: Props) {
+export default function Scene({ progress, started, onExit }: Props) {
   const landingRef = useRef<THREE.Group>(null);
 
   return (
@@ -36,17 +35,17 @@ export default function Scene({
 
       <Earth />
 
-      {!started && <LandingAstronaut ref={landingRef} progress={progress} />}
-
+      {!started && <CinematicAstronaut ref={landingRef} progress={progress} />}
       {!started && <LandingCamera astronaut={landingRef} progress={progress} />}
 
       <PhysicsWorld>
         <Moon progress={progress} />
 
-        {started && <Player />}
+        {started && <Player onExit={onExit} />}
       </PhysicsWorld>
 
       {started && <ThirdPersonCamera />}
+      <Preload all />
     </>
   );
 }

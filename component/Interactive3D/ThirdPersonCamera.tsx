@@ -9,11 +9,9 @@ import { playerInput } from "./PlayerInput";
 import { playerPosition } from "./PlayerRef";
 
 const IDLE_OFFSET = new THREE.Vector3(0, 5.5, 10);
-const WALK_OFFSET = new THREE.Vector3(0, 6.5, 13);
 const RUN_OFFSET = new THREE.Vector3(0, 7.5, 17);
 
 const IDLE_LOOK = new THREE.Vector3(0, 1.0, 0);
-const WALK_LOOK = new THREE.Vector3(0, 1.1, 0);
 const RUN_LOOK = new THREE.Vector3(0, 1.3, 0);
 
 export default function ThirdPersonCamera() {
@@ -32,17 +30,9 @@ export default function ThirdPersonCamera() {
     const moving =
       Math.abs(playerInput.moveX) > 0 || Math.abs(playerInput.moveY) > 0;
 
-    const targetOffset = playerInput.run
-      ? RUN_OFFSET
-      : moving
-        ? WALK_OFFSET
-        : IDLE_OFFSET;
+    const targetOffset = moving ? RUN_OFFSET : IDLE_OFFSET;
 
-    const targetLook = playerInput.run
-      ? RUN_LOOK
-      : moving
-        ? WALK_LOOK
-        : IDLE_LOOK;
+    const targetLook = moving ? RUN_LOOK : IDLE_LOOK;
 
     // Smooth spring interpolation
     currentOffset.current.lerp(targetOffset, 1 - Math.exp(-delta * 4.5));
@@ -61,8 +51,8 @@ export default function ThirdPersonCamera() {
 
     camera.lookAt(desiredLook.current);
 
-    // Wider view while moving
-    const targetFov = playerInput.run ? 68 : moving ? 63 : 58;
+    // Wider view while moving (same as the old "running" fov)
+    const targetFov = moving ? 68 : 58;
 
     camera.fov = THREE.MathUtils.lerp(
       camera.fov,

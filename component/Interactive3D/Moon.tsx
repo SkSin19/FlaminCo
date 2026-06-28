@@ -4,8 +4,10 @@
 import { useMemo, useRef } from "react";
 import { CuboidCollider, RigidBody } from "@react-three/rapier";
 import { useTexture } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { useFrame } from "@react-three/fiber";
+import { EXIT_POSITION } from "./ExitPortal";
+import { exitProgress } from "./ExitProgress";
 
 type Props = {
   progress: number;
@@ -17,16 +19,21 @@ type Rock = {
   scale: number;
 };
 
-const RISE_START  = 0.72;
-const RISE_END    = 0.90;
-const MAP_SIZE    = 500;
+const RISE_START = 0.72;
+const RISE_END = 0.9;
+const MAP_SIZE = 500;
 const WALL_OFFSET = 245;
+const EXIT_POS: [number, number, number] = [
+  EXIT_POSITION.x,
+  EXIT_POSITION.y,
+  EXIT_POSITION.z,
+];
 
 // ─── Radial fog shader ────────────────────────────────────────────────────────
 // Sits flat on the ground, transparent center → opaque black at edges.
 // FOG_INNER: fraction of MAP_SIZE where fog starts (0.0 = dead center)
 // FOG_OUTER: fraction where fog is fully opaque (1.0 = exact edge)
-const fogVertexShader = /* glsl */`
+const fogVertexShader = /* glsl */ `
   varying vec2 vUv;
   void main() {
     vUv = uv;
@@ -34,7 +41,7 @@ const fogVertexShader = /* glsl */`
   }
 `;
 
-const fogFragmentShader = /* glsl */`
+const fogFragmentShader = /* glsl */ `
   uniform vec3  uFogColor;
   uniform float uInner;   // UV radius where fog begins  (e.g. 0.25)
   uniform float uOuter;   // UV radius where fog is full (e.g. 0.50)
@@ -59,15 +66,19 @@ function MoonFog({ size }: { size: number }) {
   const uniforms = useMemo(
     () => ({
       uFogColor: { value: new THREE.Color("#000000") },
-      uInner:    { value: 0.30 }, // fog starts 30% out from center
-      uOuter:    { value: 0.50 }, // fully opaque at the edge (UV=0.5)
+      uInner: { value: 0.3 }, // fog starts 30% out from center
+      uOuter: { value: 0.5 }, // fully opaque at the edge (UV=0.5)
     }),
-    []
+    [],
   );
 
   return (
     // Slightly above ground so it doesn't z-fight with the terrain
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.8, 0]} renderOrder={1}>
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, 0.8, 0]}
+      renderOrder={1}
+    >
       <planeGeometry args={[size, size, 1, 1]} />
       <shaderMaterial
         ref={matRef}
@@ -84,13 +95,27 @@ function MoonFog({ size }: { size: number }) {
 }
 
 export default function Moon({ progress }: Props) {
+  const exitRing = useRef<THREE.Mesh>(null);
+
   const [colorMap, aoMap, displacementMap] = useTexture([
-    "/textures/moon/moon_04_diff_4k.jpg",
-    "/textures/moon/moon_04_ao_4k.jpg",
-    "/textures/moon/moon_04_disp_4k.png",
+    "/textures/moon/moon_meteor_02_diff_4k.jpg",
+    "/textures/moon/moon_meteor_02_ao_4k.jpg",
+    "/textures/moon/moon_meteor_02_disp_4k.png",
   ]);
 
-  const moonProgress = THREE.MathUtils.smoothstep(progress, RISE_START, RISE_END);
+  useFrame((state) => {
+    if (!exitRing.current) return;
+
+    const s = 1 + Math.sin(state.clock.elapsedTime * 3) * 0.08;
+
+    exitRing.current.scale.setScalar(s);
+  });
+
+  const moonProgress = THREE.MathUtils.smoothstep(
+    progress,
+    RISE_START,
+    RISE_END,
+  );
   const moonY = THREE.MathUtils.lerp(-180, 0, moonProgress);
 
   [colorMap, aoMap, displacementMap].forEach((tex) => {
@@ -167,6 +192,24 @@ export default function Moon({ progress }: Props) {
           <meshStandardMaterial color="#8c8c8c" />
         </mesh>
 
+        {/* Exit Portal */}
+        <mesh
+          position={EXIT_POS}
+          rotation={[-Math.PI / 2, 0, 0]}
+          ref={exitRing}
+        >
+          <ringGeometry args={[4.5, 5, 64]} />
+          <meshBasicMaterial  color={exitProgress.inside ? "#5c0000" : "#b11f1f"} transparent opacity={0.9} />
+        </mesh>
+
+        <mesh
+          position={[EXIT_POS[0], 0.02, EXIT_POS[2]]}
+          rotation={[-Math.PI / 2, 0, 0]}
+        >
+          <circleGeometry args={[4.5, 64]} />
+          <meshBasicMaterial color={exitProgress.inside ? "#5c0000" : "#b11f1f"} transparent opacity={0.15} />
+        </mesh>
+
         {/* Direction marker */}
         <mesh position={[0, 0.03, -20]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0.8, 1.2, 32]} />
@@ -187,6 +230,11 @@ export default function Moon({ progress }: Props) {
             <meshStandardMaterial color="#666666" roughness={1} />
           </mesh>
         ))}
+
+        <mesh position={[120, 0.02, -80]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[4.5, 5, 64]} />
+          <meshBasicMaterial color="#00ffff" transparent opacity={0.9} />
+        </mesh>
       </group>
     </>
   );

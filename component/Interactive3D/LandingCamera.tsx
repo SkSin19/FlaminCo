@@ -46,7 +46,7 @@ export default function LandingCamera({ astronaut, progress }: Props) {
       const t = THREE.MathUtils.smoothstep(progress, DESCENT_START, DESCENT_END);
       trackPos.z   = THREE.MathUtils.lerp(6, 16, t);
       trackPos.y   = THREE.MathUtils.lerp(pos.y + 1.5, pos.y + 7, t);
-      trackLook.y  = THREE.MathUtils.lerp(pos.y, pos.y - 6, t);
+      trackLook.y  = THREE.MathUtils.lerp(pos.y, pos.y + 2, t);
     }
 
     // ── 3. Blend stars pose → tracking — reveal window is wide for slow swing ──
