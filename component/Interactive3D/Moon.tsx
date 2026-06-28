@@ -6,19 +6,28 @@ import { CuboidCollider, RigidBody } from "@react-three/rapier";
 import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
 
+type Props = {
+  progress: number;
+};
+
 type Rock = {
   position: [number, number, number];
   rotation: [number, number, number];
   scale: number;
 };
 
-export default function Moon() {
+export default function Moon({ progress }: Props) {
   const [colorMap, aoMap, displacementMap] = useTexture([
     "/textures/moon/moon_04_diff_4k.jpg",
     "/textures/moon/moon_04_ao_4k.jpg",
     "/textures/moon/moon_04_disp_4k.png",
   ]);
 
+  const RISE_START = 0.8;
+  const RISE_END = 0.96;
+  const moonProgress = THREE.MathUtils.smoothstep(progress, RISE_START, RISE_END);
+
+  const moonY = THREE.MathUtils.lerp(-180, 0, moonProgress);
   const MAP_SIZE = 500;
 
   [colorMap, aoMap, displacementMap].forEach((tex) => {
@@ -52,9 +61,9 @@ export default function Moon() {
   }, []);
 
   const WALL_OFFSET = 245;
-  
+
   return (
-    <>
+    <group position={[0, moonY, 0]}>
       {/* Ground */}
       <RigidBody type="fixed" colliders="cuboid">
         <mesh
@@ -126,6 +135,6 @@ export default function Moon() {
 
         <meshBasicMaterial color="#00aaff" side={2} />
       </mesh>
-    </>
+    </group>
   );
 }

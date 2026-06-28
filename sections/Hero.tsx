@@ -712,7 +712,7 @@ export default function Hero() {
         {/* First text — anchored upper-third, left-aligned */}
         <div
           className="absolute left-0 right-0 pointer-events-none select-none"
-          style={{ zIndex: 5, top: "10%", padding: "0 clamp(24px, 6vw, 96px)" }}
+          style={{ zIndex: 1, top: "20%", padding: "0 clamp(24px, 6vw, 96px)" }}
         >
           <p
             id="h-text-left"
@@ -724,7 +724,7 @@ export default function Hero() {
               letterSpacing: "0.02em",
               color: "#fff",
               lineHeight: 1,
-              textAlign: "left",
+              textAlign: "center",
             }}
           >
             BEYOND WORDS
@@ -746,7 +746,7 @@ export default function Hero() {
               letterSpacing: "0.02em",
               color: "rgba(100,220,255,0.92)",
               lineHeight: 1,
-              textAlign: "right",
+              textAlign: "center",
             }}
           >
             WE BUILD EXPERIENCES
@@ -768,7 +768,7 @@ export default function Hero() {
               transform: "translateY(40px)",
             }}
           >
-            Beyond the known frontier
+            NOT JUST WEBSITES AND APPS
           </p>
 
           {/* h-title removed — replaced by the letter-slide texts above */}
@@ -784,7 +784,7 @@ export default function Hero() {
               transform: "translateY(38px)",
             }}
           >
-            Mission control · Deep space navigation · 2047
+            OPTIMIZED · ROBUST · FUTURISTIC
           </p>
 
           <div

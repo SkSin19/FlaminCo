@@ -1,29 +1,34 @@
 "use client";
 
+import { useRef } from "react";
+import * as THREE from "three";
+
 import PhysicsWorld from "./PhysicsWorld";
 import Lights from "./Lights";
-// import { PostProcessing } from "three/webgpu";
 import Earth from "./Earth";
 import Moon from "./Moon";
 import Stars from "./Stars";
 import ThirdPersonCamera from "./ThirdPersonCamera";
 import Player from "./Player";
-// import { PerformanceMonitor } from "@react-three/drei";
-// import { Stats } from "@react-three/drei";
+
+import LandingAstronaut from "./LandingAstronaut";
+import LandingCamera from "./LandingCamera";
 
 type Props = {
-  gameStarted: boolean;
+  progress: number;
+  started: boolean;
 };
 
-export default function Scene({ gameStarted }: Props) {
+export default function Scene({
+  progress,
+
+  started,
+}: Props) {
+  const landingRef = useRef<THREE.Group>(null);
+
   return (
     <>
       <color attach="background" args={["#000000"]} />
-      {/* <PerformanceMonitor
-        onDecline={() => console.log("Performance Declined")}
-        onIncline={() => console.log("Performance Improved")}
-      />
-      <Stats /> */}
 
       <Lights />
 
@@ -31,13 +36,17 @@ export default function Scene({ gameStarted }: Props) {
 
       <Earth />
 
-      <PhysicsWorld>
-        <Moon />
-        {gameStarted && <Player />}
-      </PhysicsWorld>
-      <ThirdPersonCamera />
+      {!started && <LandingAstronaut ref={landingRef} progress={progress} />}
 
-      {/* <PostProcessing /> */}
+      {!started && <LandingCamera astronaut={landingRef} progress={progress} />}
+
+      <PhysicsWorld>
+        <Moon progress={progress} />
+
+        {started && <Player />}
+      </PhysicsWorld>
+
+      {started && <ThirdPersonCamera />}
     </>
   );
 }

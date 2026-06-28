@@ -1,136 +1,58 @@
 "use client";
 
-import { useState } from "react";
-
+import { useRef, useState } from "react";
+import { useEffect } from "react";
 import Keyboard from "@/component/Interactive3D/Keyboard";
 import Scene from "@/component/Interactive3D/Scene";
 import ScreenController from "@/component/Interactive3D/ScreenController";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 import { Canvas } from "@react-three/fiber";
 
 export default function Interactive3D() {
   const [started, setStarted] = useState(false);
 
+  const [progress, setProgress] = useState(0);
+
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  useEffect(() => {
+    ScrollTrigger.create({
+      trigger: sectionRef.current,
+
+      start: "top top",
+
+      end: "bottom bottom",
+
+      scrub: true,
+
+      onUpdate: (self) => {
+        setProgress(self.progress);
+      },
+    });
+  }, []);
+
   return (
     <section
+      ref={sectionRef}
       id="interactive-3d"
-      className="relative h-screen w-full overflow-hidden bg-black"
+      className="relative h-[500vh] w-full overflow-hidden bg-black"
     >
+      <div className="fixed top-5 left-5 z-99999 text-white text-5xl">
+        {progress.toFixed(2)}
+      </div>
       <Keyboard>
-        <Canvas
-          gl={{
-            antialias: false,
-            powerPreference: "high-performance",
-          }}
-          shadows
-        >
-          <Scene gameStarted={started} />
-        </Canvas>
-        <Keyboard>
-          <Canvas shadows>
-            <Scene gameStarted={started} />
+        <div className="sticky top-0 h-screen">
+          <Canvas>
+            <Scene progress={progress} started={progress > 0.98} />
           </Canvas>
-
-          {started && <ScreenController />}
-        </Keyboard>
-      </Keyboard>
-
-      {!started && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-md ">
-          <div
-            className="
-              flex
-              w-[90%]
-              max-w-2xl
-              flex-col
-              items-center
-              gap-8
-              rounded-3xl
-              border border-white/10
-              bg-white/4
-              px-16
-              py-24
-              text-center
-              backdrop-blur-2xl
-              shadow-[0_0_100px_rgba(0,0,0,0.5)]
-            "
-          >
-            <span
-              className="
-                inline-block
-                rounded-full
-                border border-white/10
-                bg-white/5
-                px-5
-                py-10
-                text-[11px]
-                font-medium
-                uppercase
-                tracking-[0.35em]
-                text-cyan-200/80
-              "
-            >
-              Flaminco
-            </span>
-
-            <h1 className="text-5xl font-semibold tracking-tight text-white sm:text-6xl">
-              Explore Our Universe
-            </h1>
-
-            <div className="h-px w-20 bg-linear-to-r from-transparent via-cyan-400/50 to-transparent" />
-
-            <button
-              onClick={() => setStarted(true)}
-              className="
-                group
-                relative
-                mt-6
-                inline-flex
-                items-center
-                justify-center
-                overflow-hidden
-                rounded-xl
-                border border-white/15
-                bg-white
-                px-12
-                py-5
-                text-sm
-                font-medium
-                uppercase
-                tracking-[0.2em]
-                text-black
-
-                transition-all
-                duration-500
-
-                hover:border-cyan-300/60
-                hover:shadow-[0_0_40px_rgba(34,211,238,0.25)]
-                active:scale-[0.97]
-              "
-            >
-              <span className="relative z-10">Check Our Works</span>
-
-              <div
-                className="
-                  absolute
-                  inset-0
-                  -translate-x-full
-
-                  bg-linear-to-r
-                  from-transparent
-                  via-cyan-200/40
-                  to-transparent
-
-                  transition-transform
-                  duration-700
-
-                  group-hover:translate-x-full
-                "
-              />
-            </button>
-          </div>
         </div>
-      )}
+
+        {progress > 0.98 && <ScreenController />}
+      </Keyboard>
     </section>
   );
 }
