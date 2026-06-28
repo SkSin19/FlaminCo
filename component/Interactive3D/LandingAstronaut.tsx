@@ -11,10 +11,17 @@ type Props = {
 };
 
 // =========================
-// Tweak these two values
+// Scroll phase boundaries  (800vh total)
 // =========================
-const FALL_START = 0;    // begin falling right at 0vh
-const FALL_END = 0.95;   // finish descent just before "started" mode kicks in
+// 0.00–0.05  pure stars, astronaut hidden below screen
+// 0.05–0.20  astronaut SLOWLY rises from below into center
+// 0.20–0.72  astronaut floats gently upward (camera tracks)
+// 0.72–0.88  moon rises into view
+// 0.82–0.96  astronaut descends to land on moon
+export const SLIDE_IN_START = 0.05;
+export const SLIDE_IN_END   = 0.20;
+export const DESCENT_START  = 0.82;
+export const DESCENT_END    = 0.96;
 
 const LandingAstronaut = forwardRef<THREE.Group, Props>(
   function LandingAstronaut({ progress }, ref) {
@@ -25,22 +32,36 @@ const LandingAstronaut = forwardRef<THREE.Group, Props>(
     useFrame(() => {
       if (!group.current) return;
 
-      const astronautProgress = THREE.MathUtils.smoothstep(
-        progress,
-        FALL_START,
-        FALL_END,
-      );
-      group.current.position.y = THREE.MathUtils.lerp(22, 3, astronautProgress);
+      let targetY: number;
+      let targetRotY: number;
 
-      group.current.rotation.y = THREE.MathUtils.lerp(
-        0,
-        Math.PI,
-        astronautProgress,
-      );
+      if (progress < SLIDE_IN_START) {
+        // Far below — invisible
+        targetY    = -14;
+        targetRotY = 0;
+      } else if (progress < SLIDE_IN_END) {
+        // Slow rise from below
+        const t = THREE.MathUtils.smoothstep(progress, SLIDE_IN_START, SLIDE_IN_END);
+        targetY    = THREE.MathUtils.lerp(-14, 2, t);
+        targetRotY = 0;
+      } else if (progress < DESCENT_START) {
+        // Gentle upward drift as scroll advances
+        const t = (progress - SLIDE_IN_END) / (DESCENT_START - SLIDE_IN_END);
+        targetY    = THREE.MathUtils.lerp(2, 8, t);
+        targetRotY = 0;
+      } else {
+        // Descent onto moon surface
+        const t    = THREE.MathUtils.smoothstep(progress, DESCENT_START, DESCENT_END);
+        targetY    = THREE.MathUtils.lerp(8, 3, t);
+        targetRotY = THREE.MathUtils.lerp(0, Math.PI, t);
+      }
+
+      group.current.position.y = targetY;
+      group.current.rotation.y = targetRotY;
     });
 
     return (
-      <group ref={group}>
+      <group ref={group} position={[0, -14, 0]}>
         <Astronaut />
       </group>
     );

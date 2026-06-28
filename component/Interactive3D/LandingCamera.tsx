@@ -1,6 +1,7 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
+import { useRef } from "react";
 import { RefObject } from "react";
 import * as THREE from "three";
 
@@ -10,46 +11,54 @@ type Props = {
 };
 
 // =========================
-// Tweak these to control the "stars only" intro
+// Phase boundaries — must stay in sync with LandingAstronaut.tsx
 // =========================
-const REVEAL_START = 0.04; // camera starts swinging toward the astronaut
-const REVEAL_END = 0.28;   // camera fully revealed by here
+// 0.00–0.08  STARS ONLY — camera holds on empty space
+// 0.08–0.28  SLOW SWING — camera eases from stars pose toward astronaut
+// 0.28–0.82  TRACKING — camera follows astronaut center, stars all around
+// 0.82–0.96  PULL BACK — camera zooms out, tilts down to reveal moon
+const STARS_END     = 0.08;
+const REVEAL_END    = 0.28;   // much wider window = much slower swing
+const DESCENT_START = 0.82;
+const DESCENT_END   = 0.96;
 
-// Static pose during the stars-only phase — pointed away from the
-// astronaut/Earth/moon axis (which sits along x=0, z=0) so only
-// background stars are in frame.
-const STARS_POSITION = new THREE.Vector3(0, 4, 14);
-const STARS_LOOK_AT = new THREE.Vector3(40, 12, 30);
+// Stars-only pose — points into an empty quadrant (away from Earth at [0,40,-400])
+const STARS_POS    = new THREE.Vector3(0, 2, 10);
+const STARS_LOOKAT = new THREE.Vector3(-60, -8, 80);
 
 export default function LandingCamera({ astronaut, progress }: Props) {
   const { camera } = useThree();
 
-  const desiredPosition = new THREE.Vector3();
-  const finalLookAt = new THREE.Vector3();
+  const desiredPos  = useRef(new THREE.Vector3());
+  const desiredLook = useRef(new THREE.Vector3());
 
   useFrame((_, delta) => {
     if (!astronaut.current) return;
 
     const pos = astronaut.current.position;
-    const tilt = THREE.MathUtils.clamp((progress - 0.65) / 0.35, 0, 1);
-    const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
-    const reveal = THREE.MathUtils.smoothstep(progress, REVEAL_START, REVEAL_END);
 
-    // Tracking shot (same as before)
-    desiredPosition.set(
-      0,
-      THREE.MathUtils.lerp(pos.y + 1.5, pos.y + 5.5, eased),
-      THREE.MathUtils.lerp(6, 11, eased),
-    );
+    // ── 1. Base tracking position — follows astronaut ─────────────────────────
+    const trackPos  = new THREE.Vector3(0, pos.y + 1.5, 6);
+    const trackLook = new THREE.Vector3(0, pos.y, 0);
 
-    finalLookAt.set(0, THREE.MathUtils.lerp(pos.y, pos.y - 10, tilt), 0);
+    // ── 2. Pull back during descent to frame astronaut + moon together ─────────
+    if (progress > DESCENT_START) {
+      const t = THREE.MathUtils.smoothstep(progress, DESCENT_START, DESCENT_END);
+      trackPos.z   = THREE.MathUtils.lerp(6, 16, t);
+      trackPos.y   = THREE.MathUtils.lerp(pos.y + 1.5, pos.y + 7, t);
+      trackLook.y  = THREE.MathUtils.lerp(pos.y, pos.y - 6, t);
+    }
 
-    // Blend in the static starfield pose for the intro
-    desiredPosition.lerp(STARS_POSITION, 1 - reveal);
-    finalLookAt.lerp(STARS_LOOK_AT, 1 - reveal);
+    // ── 3. Blend stars pose → tracking — reveal window is wide for slow swing ──
+    const reveal = THREE.MathUtils.smoothstep(progress, STARS_END, REVEAL_END);
 
-    camera.position.lerp(desiredPosition, 1 - Math.exp(-delta * 5));
-    camera.lookAt(finalLookAt);
+    desiredPos.current.copy(trackPos).lerp(STARS_POS, 1 - reveal);
+    desiredLook.current.copy(trackLook).lerp(STARS_LOOKAT, 1 - reveal);
+
+    // ── 4. Spring — slightly slower (delta * 3.5 instead of 5) for smoothness ──
+    const speed = 1 - Math.exp(-delta * 3.5);
+    camera.position.lerp(desiredPos.current, speed);
+    camera.lookAt(desiredLook.current);
   });
 
   return null;

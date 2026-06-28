@@ -79,6 +79,20 @@ const BACKGROUND_TOOLS: BgTool[] = [
   { Icon: Box, top: "80%", left: "56%", size: 48, label: "Packages" },
 ];
 
+/* Mobile layout: far fewer tiles, smaller, and confined to a thin band at
+   the very top and very bottom of the section — the vertical middle is
+   reserved for the heading + stacked feature cards on narrow screens. */
+const BACKGROUND_TOOLS_MOBILE: BgTool[] = [
+  { Icon: Orbit, top: "3%", left: "8%", size: 36, label: "Orbit Sync" },
+  { Icon: Satellite, top: "5%", left: "64%", size: 32, label: "Telemetry" },
+  { Icon: Globe, top: "11%", left: "32%", size: 28, label: "Global Reach" },
+  { Icon: Cpu, top: "10%", left: "86%", size: 30, label: "Compute" },
+  { Icon: Database, top: "90%", left: "10%", size: 34, label: "Database" },
+  { Icon: Cloud, top: "92%", left: "62%", size: 32, label: "Cloud Storage" },
+  { Icon: Boxes, top: "83%", left: "84%", size: 28, label: "Containers" },
+  { Icon: Layers, top: "85%", left: "34%", size: 26, label: "Pipelines" },
+];
+
 const FEATURE_CARDS = [
   {
     Icon: Sparkles,
@@ -166,6 +180,7 @@ export default function TaglineTools() {
   const bgCardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const featureCardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const featureTextRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const headingRefs = useRef<(HTMLHeadingElement | null)[]>([]);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [hoveredBg, setHoveredBg] = useState<number | null>(null);
 
@@ -182,6 +197,9 @@ export default function TaglineTools() {
     const featureTexts = featureTextRefs.current.filter(
       Boolean,
     ) as HTMLDivElement[];
+    const headings = headingRefs.current.filter(
+      Boolean,
+    ) as HTMLHeadingElement[];
 
     // Start state: background cards off-screen left, smaller than their
     // resting size (so they visibly grow as they travel in). Feature cards
@@ -191,6 +209,8 @@ export default function TaglineTools() {
     gsap.set(bgCards, { x: "-70vw", opacity: 0, scale: 0.55 });
     gsap.set(featureCards, { x: "-40vw", opacity: 0, scale: 0.24 });
     gsap.set(featureTexts, { opacity: 0 });
+    // Headings start fully invisible — nothing on screen yet.
+    gsap.set(headings, { opacity: 0, filter: "blur(26px)" });
 
     const tl = gsap.timeline({
       scrollTrigger: {
@@ -202,6 +222,29 @@ export default function TaglineTools() {
         anticipatePin: 1,
       },
     });
+
+    // Heading reveal: nothing → a blurred ghost fades in → blur resolves
+    // into sharp, readable text. Two overlapping stages so it reads as one
+    // continuous "coming into focus" motion rather than two separate beats.
+    tl.to(
+      headings,
+      {
+        opacity: 1,
+        ease: "power1.out",
+        duration: 0.16,
+        stagger: { each: 0.06, from: "start" },
+      },
+      0,
+    ).to(
+      headings,
+      {
+        filter: "blur(0px)",
+        ease: "power2.out",
+        duration: 0.22,
+        stagger: { each: 0.06, from: "start" },
+      },
+      0.06,
+    );
 
     // Phase 1: background tool cards drift in from the left, staggered,
     // settling into their scattered resting spots — growing past their
@@ -293,6 +336,9 @@ export default function TaglineTools() {
         {/* Heading */}
         <div className="absolute inset-0 flex flex-col items-center justify-center px-6 pointer-events-none select-none">
           <h2
+            ref={(el) => {
+              headingRefs.current[0] = el;
+            }}
             className="text-center"
             style={{
               fontFamily: "Orbitron, monospace",
@@ -305,6 +351,9 @@ export default function TaglineTools() {
             Engineered to operate
           </h2>
           <h2
+            ref={(el) => {
+              headingRefs.current[1] = el;
+            }}
             className="text-center"
             style={{
               fontFamily: "Orbitron, monospace",

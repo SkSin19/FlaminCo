@@ -159,7 +159,7 @@ export default function Player() {
     <RigidBody
       ref={body}
       colliders={false}
-      position={[0, 0.95, 0]}
+      position={[0, 2, 0]}
       mass={1}
       lockRotations
     >

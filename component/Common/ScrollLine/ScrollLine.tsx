@@ -44,14 +44,20 @@ gsap.registerPlugin(ScrollTrigger);
    handoff points.
 
    Z-INDEX CONTRACT
-   Renders at Z_INDEX (default 5).
-   - Each wrapped section's bg (color/image) must be BELOW 5 (e.g. 0–1).
-   - Each wrapped section's foreground content must be ABOVE 5 (e.g. 10+).
+   Renders at Z_INDEX = 1.
+   - Section backgrounds (canvas, colour fills) must be z-index 0.
+   - Scatter / decorative bg elements (e.g. Tagline bg tool cards) must be z-index 2.
+   - All foreground content (headings, feature cards, interactive UI) must be z-index 3+.
    - Section roots inside should not carry their own z-index — that creates
      a separate stacking context and breaks the layering.
 ───────────────────────────────────────────────────────────────────────────── */
 
-const Z_INDEX = 2;
+// Z-index contract:
+//   0  — background (star canvas, section bg colours)
+//   1  — ScrollLine SVG beam  ← sits above bg, below every content layer
+//   2  — background scatter cards (Tagline bg tool icons)
+//   3+ — foreground content (headings, feature cards, track div)
+const Z_INDEX = 1;
 
 const LINE_COLOR_START = "#2f8fe0";
 const LINE_COLOR_MID = "#64dcff";
@@ -83,7 +89,11 @@ function buildCircularChainPath(width: number, height: number) {
   // right corner) are reserved off the top and bottom of the height; the
   // looping chain fills everything in between.
   const leadInHeight = Math.max(height * 0.12, r * 4);
-  const leadOutHeight = Math.max(height * 0.16, r * 5);
+  // This band needs to be wide enough for the curve to turn ~90° (centre
+  // of the screen → right edge, a large horizontal distance) without
+  // looking like a tight rounded corner — that requires real vertical
+  // room, not just a small fixed margin.
+  const leadOutHeight = Math.max(height * 0.34, width * 0.4, r * 10);
 
   let x = startX;
   let y = 0;
@@ -176,14 +186,18 @@ function buildCircularChainPath(width: number, height: number) {
   y = settleY;
 
   // Lead-out: sweep from the centre out to the bottom-right corner of the
-  // wrapped span.
+  // wrapped span — ends a little above the very bottom edge. With the
+  // wider leadOutHeight band above, this S-curve now has enough vertical
+  // room to open up gradually instead of snapping from vertical to
+  // diagonal.
   {
+    const endY = height - leadOutHeight * 0.15;
     const cp1x = x;
-    const cp1y = y + (height - y) * 0.4;
+    const cp1y = y + (endY - y) * 0.5;
     const cp2x = endX;
-    const cp2y = y + (height - y) * 0.75;
+    const cp2y = y + (endY - y) * 0.5;
     cmds.push(
-      `C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)} ${cp2x.toFixed(1)} ${cp2y.toFixed(1)} ${endX.toFixed(1)} ${height.toFixed(1)}`,
+      `C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)} ${cp2x.toFixed(1)} ${cp2y.toFixed(1)} ${endX.toFixed(1)} ${endY.toFixed(1)}`,
     );
   }
 
@@ -266,14 +280,14 @@ export default function ScrollLine({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div ref={wrapperRef} style={{ position: "relative" }}>
+    <div ref={wrapperRef} style={{ position: "relative", isolation: "isolate" }}>
       <div
         ref={overlayRef}
         aria-hidden="true"
         style={{
           position: "absolute",
           inset: 0,
-          zIndex: `${Z_INDEX} !important`,
+          zIndex: Z_INDEX,
           pointerEvents: "none",
           overflow: "hidden",
         }}
