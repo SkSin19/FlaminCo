@@ -8,9 +8,10 @@ gsap.registerPlugin(ScrollTrigger);
 
 type PROPS = {
   enabled: boolean;
+  dimmed?: boolean;
 };
 
-export default function ScrollIndicator({ enabled }: PROPS) {
+export default function ScrollIndicator({ enabled, dimmed }: PROPS) {
   const container = useRef<HTMLDivElement>(null);
   const topLine = useRef<HTMLDivElement>(null);
   const text = useRef<HTMLSpanElement>(null);
@@ -54,6 +55,8 @@ export default function ScrollIndicator({ enabled }: PROPS) {
 
   if (!enabled) return null;
 
+  if (!enabled) return null;
+
   return (
     <div
       ref={container}
@@ -65,7 +68,13 @@ export default function ScrollIndicator({ enabled }: PROPS) {
       z-999
       pointer-events-none
       select-none
+      transition-opacity
+      duration-500
       "
+      style={{
+        opacity: dimmed ? 0.25 : 1,
+        filter: dimmed ? "grayscale(1)" : "none",
+      }}
     >
       <div
         className="

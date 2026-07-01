@@ -6,34 +6,40 @@ import { ScrollLineTrack } from "@/component/Common/ScrollLine/ScrollLine";
 import Hero from "@/sections/Hero";
 import Interactive3D from "@/sections/Interactive3D";
 import Tagline from "@/sections/Tagline";
+import About from "@/sections/About";
 
 export default function Home() {
-  const [showIndicator, setShowIndicator] = useState(true);
+  const [dimmed, setDimmed] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
 
   useEffect(() => {
-    const el = document.getElementById("interactive-3d");
-    if (!el) return;
+    const onLanded = () => setDimmed(true);
+    const onExited = () => setDimmed(false);
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // Hidden while Interactive3D is in view, visible otherwise
-        setShowIndicator(!entry.isIntersecting);
-      },
-      { threshold: 0.15 },
-    );
+    window.addEventListener("astronautLanded", onLanded);
+    window.addEventListener("astronautExited", onExited);
 
-    observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      window.removeEventListener("astronautLanded", onLanded);
+      window.removeEventListener("astronautExited", onExited);
+    };
   }, []);
 
   return (
     <main className="bg-black select-none">
-      <ScrollIndicator enabled={showIndicator} />
+      <ScrollIndicator enabled={true} dimmed={dimmed} />
       <Hero />
       <ScrollLineTrack>
         <Tagline />
-        <Interactive3D />
       </ScrollLineTrack>
+      <Interactive3D
+        onLanded={() => setDimmed(true)}
+        onExited={() => {
+          setDimmed(false);
+          setShowAbout(true);
+        }}
+      />
+      {showAbout && <About />}
     </main>
   );
 }

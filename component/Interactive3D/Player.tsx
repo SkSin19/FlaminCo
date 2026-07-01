@@ -16,6 +16,8 @@ import { playerInput } from "./PlayerInput";
 import { EXIT_POSITION } from "./ExitPortal";
 import { exitProgress } from "./ExitProgress";
 
+import { exitSequence } from "../ExitSequence/ExitSequence";
+
 type Props = {
   onExit: () => void;
 };
@@ -43,6 +45,7 @@ export default function Player({ onExit }: Props) {
 
   useFrame((state, delta) => {
     if (!body.current) return;
+    if (exitSequence.phase !== "idle") return; // freeze player during exit sequence
 
     const keys = getKeys();
 
@@ -189,9 +192,9 @@ export default function Player({ onExit }: Props) {
       exitProgress.inside = true;
       exitProgress.progress = Math.min(insideTime.current / 3, 1);
 
-      if (insideTime.current >= 3) {
+      if (insideTime.current >= 3 && exitSequence.phase === "idle") {
         insideTime.current = -999;
-        onExit();
+        exitSequence.phase = "panning";
       }
     } else {
       insideTime.current = Math.max(insideTime.current - delta * 1.4, 0);

@@ -8,6 +8,7 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { EXIT_POSITION } from "./ExitPortal";
 import { exitProgress } from "./ExitProgress";
+import { exitSequence } from "../ExitSequence/ExitSequence";
 
 type Props = {
   progress: number;
@@ -199,7 +200,11 @@ export default function Moon({ progress }: Props) {
           ref={exitRing}
         >
           <ringGeometry args={[4.5, 5, 64]} />
-          <meshBasicMaterial  color={exitProgress.inside ? "#5c0000" : "#b11f1f"} transparent opacity={0.9} />
+          <meshBasicMaterial
+            color={exitProgress.inside ? "#5c0000" : "#b11f1f"}
+            transparent
+            opacity={exitSequence.phase === "idle" ? 0.9 : 0}
+          />
         </mesh>
 
         <mesh
