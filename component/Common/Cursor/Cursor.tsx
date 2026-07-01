@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
-import { useFrame } from "@react-three/fiber";
 
 export default function Cursor() {
   const cursor = useRef<HTMLDivElement>(null);
@@ -13,7 +12,23 @@ export default function Cursor() {
 
   const vel = useRef({ x: 0, y: 0 });
 
+  const [isTouchDevice, setIsTouchDevice] = useState(true); // default true so it doesn't flash on first paint
+
   useEffect(() => {
+    const check = () => {
+      const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+      const smallScreen = window.innerWidth < 1024; // tablets and below
+      setIsTouchDevice(coarsePointer || smallScreen);
+    };
+
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  useEffect(() => {
+    if (isTouchDevice) return;
+
     let frame: number;
 
     const animate = () => {
@@ -49,7 +64,7 @@ export default function Cursor() {
     animate();
 
     return () => cancelAnimationFrame(frame);
-  }, []);
+  }, [isTouchDevice]);
 
   const move = (e: MouseEvent) => {
     target.current.x = e.clientX;
@@ -59,6 +74,8 @@ export default function Cursor() {
   const [hover, setHover] = useState(false);
 
   useEffect(() => {
+    if (isTouchDevice) return;
+
     const selectors = "button,a,input,textarea,[role='button'],[data-cursor]";
 
     const elements = document.querySelectorAll(selectors);
@@ -77,14 +94,18 @@ export default function Cursor() {
         el.removeEventListener("mouseleave", leave);
       });
     };
-  }, []);
+  }, [isTouchDevice]);
   useEffect(() => {
+    if (isTouchDevice) return;
+
     window.addEventListener("mousemove", move);
 
     return () => {
       window.removeEventListener("mousemove", move);
     };
-  }, []);
+  }, [isTouchDevice]);
+
+  if (isTouchDevice) return null;
 
   return (
     <div
@@ -94,7 +115,7 @@ export default function Cursor() {
       top-0
       left-0
       pointer-events-none
-      z-[999999]
+      z-999999
       -translate-x-1/2
       -translate-y-1/2
       "

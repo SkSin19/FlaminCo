@@ -28,7 +28,6 @@ import BottomBlur from "@/component/Common/Blurs/BottomBlur";
 import TopBlur from "@/component/Common/Blurs/TopBlur";
 gsap.registerPlugin(ScrollTrigger);
 
-
 type BgTool = {
   Icon: LucideIcon;
   top: string; // % from top of track
@@ -161,6 +160,14 @@ export default function TaglineTools() {
   const headingRefs = useRef<(HTMLHeadingElement | null)[]>([]);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [hoveredBg, setHoveredBg] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const update = () => setIsMobile(window.innerWidth < 768);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
   useSectionStarfield(starCanvasRef);
 
@@ -425,8 +432,14 @@ export default function TaglineTools() {
             and swaps its body copy for a more specific detail line while
             active. */}
         <div
-          className="absolute left-1/2 -translate-x-1/2 flex gap-5 px-6"
-          style={{ top: "62%", zIndex: 3, width: "min(920px, 92vw)" }}
+          className={`absolute left-1/2 -translate-x-1/2 flex gap-3 md:gap-5 px-4 md:px-6 ${
+            isMobile ? "flex-col" : "flex-row"
+          }`}
+          style={{
+            top: isMobile ? "56%" : "62%",
+            zIndex: 3,
+            width: "min(920px, 92vw)",
+          }}
         >
           {FEATURE_CARDS.map(({ Icon, title, body, detail }, i) => {
             const isActive = activeIndex === i;
@@ -439,11 +452,12 @@ export default function TaglineTools() {
                 onMouseEnter={() => setActiveIndex(i)}
                 className="relative rounded-2xl cursor-pointer overflow-hidden"
                 style={{
-                  flexGrow: isActive ? 2.4 : 1,
-                  flexBasis: 0,
-                  minWidth: 200,
+                  flexGrow: isMobile ? undefined : isActive ? 2.4 : 1,
+                  flexBasis: isMobile ? "auto" : 0,
+                  minWidth: isMobile ? "auto" : 200,
+                  width: isMobile ? "100%" : undefined,
                   boxSizing: "border-box",
-                  padding: "24px",
+                  padding: isMobile ? "16px" : "24px",
                   transition: "flex-grow 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
                   background: "rgba(255,255,255,0.035)",
                   border: isActive
