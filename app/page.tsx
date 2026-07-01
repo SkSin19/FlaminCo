@@ -47,15 +47,9 @@ export default function Home() {
       <Interactive3D
         onLanded={() => setDimmed(true)}
         onExited={() => {
+          console.log("[page] onExited fired, setting showAbout true");
           setDimmed(false);
           setShowAbout(true);
-
-          requestAnimationFrame(() => {
-            document.getElementById("about")?.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-          });
         }}
       />
       {showAbout && <About />}

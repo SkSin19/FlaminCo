@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { useRef, useState, useEffect } from "react";
@@ -55,16 +56,7 @@ export default function Interactive3D({ onLanded, onExited }: Props) {
     const section = sectionRef.current;
     if (!overlay || !section) return;
 
-    const tl = gsap.timeline({
-      onComplete: () => {
-        setGameActive(false);
-        setStarted(false);
-
-        exitSequence.phase = "idle";
-        exitProgress.inside = false;
-        exitProgress.progress = 0;
-      },
-    });
+    const tl = gsap.timeline();
 
     tl.to(overlay, {
       opacity: 1,
@@ -72,21 +64,47 @@ export default function Interactive3D({ onLanded, onExited }: Props) {
       ease: "power2.in",
     });
 
+    // Interactive3D.tsx — handleExit, trimmed
     tl.call(() => {
       canLeaveRef.current = true;
 
+      setGameActive(false);
+      setStarted(false);
+      document.body.style.overflow = "";
+
+      exitSequence.phase = "idle";
+      exitProgress.inside = false;
+      exitProgress.progress = 0;
+
       onExited?.();
 
+      // Wait a couple frames for <About> (and FlaminicoTitle's pinned
+      // ScrollTrigger) to actually mount and register, then force GSAP to
+      // recompute layout/pin-spacing before scrolling — otherwise the
+      // pin-spacer inserted by that trigger can shift #about's real
+      // position out from under a scroll that was already computed.
       requestAnimationFrame(() => {
-        document.getElementById("about")?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
+        requestAnimationFrame(() => {
+          const el = document.getElementById("about");
+          if (!el) {
+            console.warn("[exit] #about not found after 2 rAFs");
+            return;
+          }
+
+          ScrollTrigger.refresh();
+
+          gsap.to(window, {
+            scrollTo: { y: el, offsetY: 0 },
+            duration: 1,
+            ease: "power2.out",
+            overwrite: "auto",
+          });
         });
       });
 
       setTimeout(() => {
         canLeaveRef.current = false;
-      }, 1000);
+      }, 2000); // gave the gsap scrollTo above a bit more headroom too
     });
 
     tl.to(overlay, {
@@ -214,7 +232,7 @@ export default function Interactive3D({ onLanded, onExited }: Props) {
     >
       <div
         ref={overlayRef}
-        className="fixed inset-0 bg-black pointer-events-none z-[9999]"
+        className="fixed inset-0 bg-black pointer-events-none z-9999"
         style={{ opacity: 0 }}
       />
 
