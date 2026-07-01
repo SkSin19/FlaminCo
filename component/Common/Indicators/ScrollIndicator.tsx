@@ -6,7 +6,11 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-export default function ScrollIndicator() {
+type PROPS = {
+  enabled: boolean;
+};
+
+export default function ScrollIndicator({ enabled }: PROPS) {
   const container = useRef<HTMLDivElement>(null);
   const topLine = useRef<HTMLDivElement>(null);
   const text = useRef<HTMLSpanElement>(null);
@@ -48,12 +52,14 @@ export default function ScrollIndicator() {
     return () => clearInterval(interval);
   }, []);
 
+  if (!enabled) return null;
+
   return (
     <div
       ref={container}
       className="
       fixed
-      right-[6px]
+      right-1.5
       top-1/2
       -translate-y-1/2
       z-999
@@ -86,7 +92,7 @@ export default function ScrollIndicator() {
 
         <span
           ref={text}
-            className="
+          className="
             text-white
             uppercase
             tracking-[0.45em]

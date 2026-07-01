@@ -173,8 +173,6 @@ export default function Player({ onExit }: Props) {
       }
     }
 
-   
-
     playerPosition.set(translation.x, translation.y, translation.z);
     playerRotation.set(
       body.current.rotation().x,
@@ -207,7 +205,7 @@ export default function Player({ onExit }: Props) {
     <RigidBody
       ref={body}
       colliders={false}
-      position={[0, 2, 0]}
+      position={[0, 0.95, 0]}
       mass={1}
       lockRotations
     >

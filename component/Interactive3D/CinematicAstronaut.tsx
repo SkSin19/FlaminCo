@@ -127,21 +127,21 @@ const CinematicAstronaut = forwardRef<THREE.Group, Props>(
           DESCENT_END,
         );
 
-        targetY = THREE.MathUtils.lerp(8, 3, t);
+        targetY = THREE.MathUtils.lerp(8, 0.95, t);
         targetRotY = THREE.MathUtils.lerp(0, Math.PI, t);
 
         // Still descending → keep falling
-        if (targetY > 3.02) {
+        if (targetY > 0.97) {
           play("fall");
         }
         // Just touched the ground
         else if (progress < 0.985) {
-          targetY = 3;
+          targetY = 0.95;
           play("flat");
         }
         // Finished lying down → stand up
         else {
-          targetY = 3;
+          targetY = 0.95;
           play("stand");
         }
       }

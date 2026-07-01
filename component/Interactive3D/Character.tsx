@@ -196,7 +196,7 @@ const Character = forwardRef<CharacterHandle>(function Character(_, ref) {
   }));
 
   return (
-    <group ref={group} position={[0, -0.55, 0]} rotation={[0, Math.PI, 0]}>
+    <group ref={group} position={[0, 0, 0]} rotation={[0, Math.PI, 0]}>
       <primitive object={character} />
     </group>
   );
