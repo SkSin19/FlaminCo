@@ -40,8 +40,16 @@ const Character = forwardRef<CharacterHandle>(function Character(_, ref) {
   const flatFbx = useFBX(FALL_FLAT_URL);
   const standFbx = useFBX(STAND_URL);
 
-  const character = useMemo(() => clone(idleFbx) as THREE.Group, [idleFbx]);
-
+  const character = useMemo(() => {
+    const c = clone(idleFbx) as THREE.Group;
+    c.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true;
+        child.receiveShadow = false;
+      }
+    });
+    return c;
+  }, [idleFbx]);
   const clips = useMemo(() => {
     const c: THREE.AnimationClip[] = [];
 
@@ -188,7 +196,7 @@ const Character = forwardRef<CharacterHandle>(function Character(_, ref) {
   }));
 
   return (
-    <group ref={group} rotation={[0, Math.PI, 0]}>
+    <group ref={group} position={[0, -0.55, 0]} rotation={[0, Math.PI, 0]}>
       <primitive object={character} />
     </group>
   );

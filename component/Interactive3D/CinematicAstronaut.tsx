@@ -36,8 +36,16 @@ const CinematicAstronaut = forwardRef<THREE.Group, Props>(
     const flatFbx = useFBX(FLAT_URL);
     const standFbx = useFBX(STAND_URL);
 
-    const character = useMemo(() => clone(idleFbx) as THREE.Group, [idleFbx]);
-
+    const character = useMemo(() => {
+      const c = clone(idleFbx) as THREE.Group;
+      c.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.castShadow = true;
+          child.receiveShadow = false;
+        }
+      });
+      return c;
+    }, [idleFbx]);
     const clips = useMemo(() => {
       const out: THREE.AnimationClip[] = [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

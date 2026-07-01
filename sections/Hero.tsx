@@ -9,6 +9,8 @@ import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import BottomBlur from "@/component/Common/Blurs/BottomBlur";
+
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -548,13 +550,6 @@ export default function Hero() {
         opacity: 0, y: -28, stagger: 0.03, ease: "power2.in", duration: 0.14,
       }, 0.78);
 
-      // Scroll indicator
-      gsap.to("#h-scroll", { opacity: 1, delay: 1.4, duration: 0.9, ease: "power2.out" });
-      ScrollTrigger.create({
-        trigger: heroRef.current, start: "top+=60 top",
-        onEnter:     () => gsap.to("#h-scroll", { opacity: 0, duration: 0.4 }),
-        onLeaveBack: () => gsap.to("#h-scroll", { opacity: 1, duration: 0.4 }),
-      });
     }
 
     /* ── RENDER LOOP ───────────────────────────────────────────────────── */
@@ -651,27 +646,14 @@ export default function Hero() {
     };
   }, []);
 
-  /* ── JSX ───────────────────────────────────────────────────────────── */
   return (
     <div ref={heroRef} className="relative" style={{ height: "500vh" }}>
       <div className="sticky top-0 h-screen overflow-hidden">
-
+      <BottomBlur height={30} color="#000003" className="z-10" />
         {/* Starfield */}
         <canvas ref={bgRef} className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }} />
-
-        {/* Three.js canvas — zIndex 3 so the ship (WebGL) renders above the
-            FLAMINCO text div (zIndex 2). Earth is also in this canvas but sits
-            further back in 3-D depth, so the HTML text appears to float between
-            Earth and the ship purely due to the CSS z-stack. */}
         <canvas ref={glRef} className="absolute inset-0 w-full h-full" style={{ zIndex: 3 }} />
 
-        {/* ── CHANGE 2: FLAMINCO title — sits above earth, behind ship ── */}
-        {/* The 3-D ship is rendered in the same WebGL canvas, so it naturally
-            occludes the 2-D HTML text below it.  We give this div zIndex 2
-            (above the GL canvas at 1) BUT the ship canvas IS the GL canvas —
-            meaning the ship pixels overwrite the WebGL transparent bg, not the
-            HTML div.  To get the ship visually on top of the text we set the
-            GL canvas zIndex to 3 and put FLAMINCO at zIndex 2. */}
         <div
           id="h-flaminco"
           className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"

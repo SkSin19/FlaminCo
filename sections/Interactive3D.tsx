@@ -20,29 +20,29 @@ export default function Interactive3D() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const snappedRef = useRef(false);
 
-  const started = progress >= 0.98;
+  const [started, setStarted] = useState(false);
   const startedRef = useRef(started);
 
   const handleExit = () => {
     setGameActive(false);
-  gsap.to(window, {
-    scrollTo: {
-      y:
-        sectionRef.current!.offsetTop +
-        sectionRef.current!.offsetHeight,
-    },
-    duration: 1.5,
-    ease: "power2.inOut",
-  });
-};
+    setStarted(false);
+    snappedRef.current = false;
+    gsap.to(window, {
+      scrollTo: {
+        y: sectionRef.current!.offsetTop + sectionRef.current!.offsetHeight,
+      },
+      duration: 1.5,
+      ease: "power2.inOut",
+    });
+  };
 
   useEffect(() => {
-  document.body.style.overflow = gameActive ? "hidden" : "";
+    document.body.style.overflow = gameActive ? "hidden" : "";
 
-  return () => {
-    document.body.style.overflow = "";
-  };
-}, [gameActive]);
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [gameActive]);
 
   useEffect(() => {
     startedRef.current = started;
@@ -50,7 +50,13 @@ export default function Interactive3D() {
 
   // Block Space + arrow keys from scrolling the page while the game is active
   useEffect(() => {
-    const SCROLL_KEYS = ["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+    const SCROLL_KEYS = [
+      "Space",
+      "ArrowUp",
+      "ArrowDown",
+      "ArrowLeft",
+      "ArrowRight",
+    ];
     const handleKeyDown = (e: KeyboardEvent) => {
       if (startedRef.current && SCROLL_KEYS.includes(e.code)) {
         e.preventDefault();
@@ -61,42 +67,45 @@ export default function Interactive3D() {
   }, []);
 
   useEffect(() => {
-  const trigger = ScrollTrigger.create({
-    trigger: sectionRef.current,
-    start: "top top",
-    end: "bottom bottom",
-    scrub: true,
+    const trigger = ScrollTrigger.create({
+      trigger: sectionRef.current,
+      start: "top top",
+      end: "bottom bottom",
+      scrub: true,
 
-    onUpdate: (self) => {
-      setProgress(self.progress);
+      onUpdate: (self) => {
+        if (startedRef.current) return; // once game has started, ignore all scroll-driven progress
 
-      // Snap once when the cinematic is almost finished
-      if (self.progress >= 0.98 && !snappedRef.current) {
-    snappedRef.current = true;
+        setProgress(self.progress);
 
-    setGameActive(true);
+        // Snap once when the cinematic is almost finished
+        if (self.progress >= 0.98 && !snappedRef.current) {
+          snappedRef.current = true;
 
-    gsap.to(window,{
-        scrollTo:{
-            y:
+          setGameActive(true);
+          setStarted(true);
+
+          gsap.to(window, {
+            scrollTo: {
+              y:
                 sectionRef.current!.offsetTop +
                 sectionRef.current!.offsetHeight -
                 window.innerHeight,
-        },
-        duration:0.7,
-        ease:"power2.out",
+            },
+            duration: 0.7,
+            ease: "power2.out",
+          });
+        }
+
+        // Reset if user scrolls back up
+        if (self.progress < 0.9) {
+          snappedRef.current = false;
+        }
+      },
     });
-}
 
-      // Reset if user scrolls back up
-      if (self.progress < 0.9) {
-        snappedRef.current = false;
-      }
-    },
-  });
-
-  return () => trigger.kill();
-}, []);
+    return () => trigger.kill();
+  }, []);
 
   // Speech bubbles only visible during the cinematic (not after landing)
   const showBubbles = progress > 0.18 && progress < 0.66;
@@ -111,7 +120,7 @@ export default function Interactive3D() {
       <Keyboard>
         <div className="sticky top-0 h-screen">
           <Canvas shadows>
-            <Scene progress={progress} started={started} onExit={handleExit}/>
+            <Scene progress={progress} started={started} onExit={handleExit} />
           </Canvas>
           <ExitBar />
 
