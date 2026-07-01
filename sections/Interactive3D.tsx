@@ -127,9 +127,9 @@ export default function Interactive3D() {
           {/* Speech bubbles — DOM overlay, inside the sticky div so they
               stay pinned to the canvas while scrolling */}
           {showBubbles && <SpeechBubbles progress={progress} />}
-        </div>
 
-        {started && <ScreenController />}
+          {started && <ScreenController />}
+        </div>
       </Keyboard>
     </section>
   );
