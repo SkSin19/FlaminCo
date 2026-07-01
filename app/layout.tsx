@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-page-custom-font */
 import type { Metadata } from "next";
 import "./globals.css";
+import Cursor from "@/component/Common/Cursor/Cursor";
 
 export const metadata: Metadata = {
   title: "Space Hero",
@@ -14,13 +15,21 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
         <link
           href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="bg-black text-white overflow-x-hidden">{children}</body>
+      <body className="bg-black text-white overflow-x-hidden">
+        <Cursor />
+
+        {children}
+      </body>
     </html>
   );
 }

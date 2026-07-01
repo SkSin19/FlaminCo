@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import {
@@ -18,7 +19,7 @@ type Props = {
 
 export const SLIDE_IN_START = 0.05;
 export const SLIDE_IN_END = 0.2;
-export const DESCENT_START = 0.82;
+export const DESCENT_START = 0.5;
 export const DESCENT_END = 0.96;
 
 const IDLE_URL = "/models/animations/astronaut_idle.fbx";

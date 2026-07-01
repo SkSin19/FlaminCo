@@ -5,6 +5,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html,
+body,
+* {
+    cursor: none !important;
+}
+
 * {
   margin: 0;
   padding: 0;

@@ -23,34 +23,11 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
-
+import { ScrollLineBeam } from "@/component/Common/ScrollLine/ScrollLine";
+import BottomBlur from "@/component/Common/Blurs/BottomBlur";
+import TopBlur from "@/component/Common/Blurs/TopBlur";
 gsap.registerPlugin(ScrollTrigger);
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   TAGLINE TOOLS SECTION
-   Phase 1 (scroll 0 → ~0.4): a scatter of small tool-icon cards flies in from
-   the LEFT edge into a masonry-like arrangement across the section, growing
-   in size as they travel (bigger while moving, per the brief).
-   Phase 2 (~0.4 → ~0.7): those background cards keep drifting right, grow a
-   little further, and fade out, while the 3 feature cards arrive from the
-   left — starting at the same small "icon card" footprint as the background
-   tiles — and grow smoothly into their full padded card as they settle into
-   the centered row. This is the "stuck" moment.
-   Phase 3 (~0.7 → 1.0): hold — section stays pinned so the 3 cards sit on
-   screen for a beat before normal scroll resumes.
-
-   HOVER: every card (background tiles + the 3 feature cards) is hover
-   enabled with a "water filling" effect — a tinted fill rises from the
-   bottom of the card and different info swaps in (a label for the small
-   tiles, a deeper detail line for the feature cards). Position/scale is
-   driven exclusively by GSAP transforms here; hover only ever touches
-   non-transform properties (height/opacity/border/shadow) on the same
-   elements, so the two animation systems never fight over `transform`.
-
-   For the 3 feature cards specifically: hovering grows the hovered card's
-   width via flex-grow. There is intentionally no mouse-leave reset — the
-   most recently hovered card remains wide until a different card is hovered.
-───────────────────────────────────────────────────────────────────────────── */
 
 type BgTool = {
   Icon: LucideIcon;
@@ -328,6 +305,9 @@ export default function TaglineTools() {
         className="absolute inset-0 w-full h-full"
         style={{ zIndex: 0 }}
       />
+      <ScrollLineBeam />
+      <TopBlur height={180} color="#000003" className="z-10" />
+      <BottomBlur height={180} color="#000003" className="z-10" />
 
       <div
         ref={trackRef}
@@ -362,7 +342,7 @@ export default function TaglineTools() {
               fontSize: "clamp(28px, 5vw, 52px)",
               lineHeight: 1.25,
               background:
-                "linear-gradient(90deg, #5b8dee 0%, #64dcff 55%, #9ff7e0 100%)",
+                "linear-gradient(90deg, #9ff7e0 0%, #64dcff 45%, #5b8dee 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",

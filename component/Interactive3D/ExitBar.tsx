@@ -22,7 +22,7 @@ export default function ExitBar() {
   if (progress <= 0.001) return null;
 
   return (
-    <div className="pointer-events-none absolute left-1/2 top-8 z-50 w-[340px] -translate-x-1/2">
+    <div className="pointer-events-none absolute left-1/2 top-8 z-50 w-85 -translate-x-1/2">
       <div className="h-2 overflow-hidden rounded-full bg-white/15 backdrop-blur">
         <div
           className="h-full rounded-full bg-white transition-[width] duration-75"

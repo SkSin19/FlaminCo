@@ -1,4 +1,4 @@
-import ScrollLine from "@/component/Common/ScrollLine/ScrollLine";
+import { ScrollLineTrack } from "@/component/Common/ScrollLine/ScrollLine";
 import Hero from "@/sections/Hero";
 import Interactive3D from "@/sections/Interactive3D";
 import Tagline from "@/sections/Tagline";
@@ -7,10 +7,11 @@ export default function Home() {
   return (
     <main className="bg-black select-none">
       <Hero />
-      <ScrollLine>
+      <ScrollLineTrack>
         <Tagline />
-      </ScrollLine>
-      <Interactive3D />
+        <Interactive3D />
+      </ScrollLineTrack>
+      
     </main>
   );
 }

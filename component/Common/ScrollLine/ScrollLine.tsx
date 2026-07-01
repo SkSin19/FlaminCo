@@ -1,70 +1,91 @@
+/* eslint-disable react-hooks/refs */
 "use client";
 
-import { useEffect, useRef, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  ReactNode,
+} from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   SCROLL LINE  (scoped version)
+/* ─────────────────────────────────────────────────────────────────────────
+   SCROLL LINE  (context-based, DOM-order safe)
 
-   Wrap ONLY the sections you want the line to run through. It measures its
-   own children's rendered height and the line draws itself in step with
-   scroll ONLY across that span — starting the moment this wrapper enters
-   the top of the viewport, finishing when it leaves the bottom.
+   WHY THIS SHAPE
+   The old version wrapped a whole section from the outside and gave its
+   SVG overlay an explicit z-index, assuming that would slot it "above
+   backgrounds, below content" inside whatever it wrapped. That doesn't
+   work: a section using `position: relative` (needed so its own absolutely
+   positioned children lay out correctly) is itself a single positioned box
+   from the outside. CSS stacking-context rules make it atomic — the whole
+   section, background and content together, sits at ONE stacking slot
+   relative to a sibling overlay. No z-index on the outer overlay can
+   reach "between" that section's own background and its own content,
+   because that comparison never happens at the outer level — it only
+   exists inside the section's own stacking context.
+
+   THE FIX
+   The beam now physically lives in the DOM between a section's background
+   and its foreground content, instead of wrapping the section from
+   outside. Two pieces:
+
+     <ScrollLineTrack>   → wraps everything the line should run through
+                            (one section or many). Purely structural —
+                            renders no visuals, just measures total height
+                            and drives one continuous scroll-scrubbed path.
+
+     <ScrollLineBeam />  → drop this INSIDE each section, as a normal
+                            sibling placed AFTER the section's own
+                            background elements and BEFORE its foreground
+                            content in JSX. DOM order is what makes this
+                            work now — within a single stacking context,
+                            later siblings paint above earlier ones by
+                            default. The beam's own z-index (default 1)
+                            only needs to beat non-positioned/low bg
+                            content; anything you want above the line
+                            just needs to come after it in the section's
+                            JSX (or use z-index 2+, same as before).
 
    USAGE
-     <Hero />
-     <ScrollLine>
-       <SectionA />
-       <SectionB />
-       <SectionC />
-     </ScrollLine>
-     <Interactive3DSection />
+     <ScrollLineTrack>
+       <SectionA>
+         <SectionABackground />   // canvas / bg colour / bg image
+         <ScrollLineBeam />
+         <SectionAContent />      // headings, cards, buttons
+       </SectionA>
+       <SectionB>
+         <SectionBBackground />
+         <ScrollLineBeam />
+         <SectionBContent />
+       </SectionB>
+     </ScrollLineTrack>
 
-   The line will NOT appear over <Hero /> or <Interactive3DSection /> — only
-   over whatever you put inside <ScrollLine>...</ScrollLine>. Add/remove
-   sections inside it freely later; it re-measures on resize and on content
-   growth (ResizeObserver on the wrapper itself).
+   Every <ScrollLineBeam /> in the tree shares ONE continuous path and ONE
+   scroll-driven dash offset — each just gets clipped to the section it's
+   placed in, so the line appears to run seamlessly from section to
+   section as the page scrolls, correctly sandwiched in each one.
 
-   SHAPE
-   The path now reads as a single journey across the wrapped block rather
-   than a centered descent:
-     - Enters from the LEFT edge at the top of the wrapped span.
-     - Sweeps inward and spends the middle of the span coiling — a chain of
-       semicircles and near-full circular loops with occasional sideways
-       bezier drifts — centered on screen, so the looping motif visually
-       happens "in the middle".
-     - Sweeps back out and finishes at the BOTTOM-RIGHT corner of the
-       wrapped span (which lines up with the bottom-right of the screen at
-       the moment the wrapper finishes leaving the viewport).
-   Every join is tangent-continuous (no sharp corners) — the lead-in and
-   lead-out are bezier sweeps that match the coil's vertical tangent at the
-   handoff points.
-
-   Z-INDEX CONTRACT
-   Renders at Z_INDEX = 1.
-   - Section backgrounds (canvas, colour fills) must be z-index 0.
-   - Scatter / decorative bg elements (e.g. Tagline bg tool cards) must be z-index 2.
-   - All foreground content (headings, feature cards, interactive UI) must be z-index 3+.
-   - Section roots inside should not carry their own z-index — that creates
-     a separate stacking context and breaks the layering.
-───────────────────────────────────────────────────────────────────────────── */
-
-// Z-index contract:
-//   0  — background (star canvas, section bg colours)
-//   1  — ScrollLine SVG beam  ← sits above bg, below every content layer
-//   2  — background scatter cards (Tagline bg tool icons)
-//   3+ — foreground content (headings, feature cards, track div)
-const Z_INDEX = 1;
+   SHAPE (unchanged from before)
+   Enters from the LEFT edge at the top of the track, sweeps into the
+   centre and coils through the middle (semicircles, near-full circular
+   loops, occasional sideways bezier drifts), then sweeps back out to the
+   BOTTOM-RIGHT corner at the bottom of the track. Every join is
+   tangent-continuous. No randomness — same width/height always produces
+   the same shape.
+───────────────────────────────────────────────────────────────────────── */
 
 const LINE_COLOR_START = "#2f8fe0";
 const LINE_COLOR_MID = "#64dcff";
 const LINE_COLOR_END = "#bdf3ff";
 
-const STROKE_WIDTH = 16;
-const GLOW_WIDTH = 30;
+const STROKE_WIDTH = 40;
+const GLOW_WIDTH = 70;
 
 /** Builds a smooth, fully deterministic path: enters from the left edge,
  *  sweeps into the centre and runs a fixed repeating chain of straight
@@ -78,29 +99,16 @@ function buildCircularChainPath(width: number, height: number) {
   const straightLen = r * 2.6;
   const curveShift = r * 1.8;
 
-  // Keep the start point off the literal left edge so the glow (GLOW_WIDTH)
-  // doesn't get clipped there — but the end point is meant to land exactly
-  // in the bottom-right corner, so it gets no inset.
-  const edgeInset = Math.max(GLOW_WIDTH, width * 0.05);
-  const startX = edgeInset;
+  const startX = 0;
   const endX = width;
 
-  // Lead-in band (left edge → centre) and lead-out band (centre → bottom-
-  // right corner) are reserved off the top and bottom of the height; the
-  // looping chain fills everything in between.
   const leadInHeight = Math.max(height * 0.12, r * 4);
-  // This band needs to be wide enough for the curve to turn ~90° (centre
-  // of the screen → right edge, a large horizontal distance) without
-  // looking like a tight rounded corner — that requires real vertical
-  // room, not just a small fixed margin.
   const leadOutHeight = Math.max(height * 0.34, width * 0.4, r * 10);
 
   let x = startX;
   let y = 0;
   const cmds: string[] = [`M ${x.toFixed(1)} ${y.toFixed(1)}`];
 
-  // Lead-in: sweep from the left edge into the centre, where the looping
-  // chain begins.
   const leadInEndY = leadInHeight;
   {
     const cp1x = x;
@@ -114,10 +122,8 @@ function buildCircularChainPath(width: number, height: number) {
   x = cx;
   y = leadInEndY;
 
-  // Looping chain — stays centred on cx, coiling through the middle band
-  // of the height.
   const loopFloor = height - leadOutHeight;
-  let dir = 1; // curve/bulge direction: 1 = right, -1 = left
+  let dir = 1;
   const pattern: Array<"line" | "curve" | "circle"> = [
     "line",
     "curve",
@@ -151,21 +157,15 @@ function buildCircularChainPath(width: number, height: number) {
       dir *= -1;
     } else {
       const sweep = dir > 0 ? 1 : 0;
-
       const endY = y + r * 2;
-
       cmds.push(
         `A ${r.toFixed(1)} ${r.toFixed(1)} 0 0 ${sweep} ${x.toFixed(1)} ${endY.toFixed(1)}`,
       );
-
       y = endY;
-
       dir *= -1;
     }
   }
 
-  // Re-centre onto cx in case the chain happened to break mid "curve" beat,
-  // so the lead-out always starts from a known, centred position.
   if (Math.abs(x - cx) > 0.5) {
     const settleEndY = y + r * 2;
     const cp1x = x;
@@ -179,17 +179,10 @@ function buildCircularChainPath(width: number, height: number) {
     y = settleEndY;
   }
 
-  // A short straight settle so the lead-out begins on a clean vertical
-  // tangent — no kink where the coil hands off to the final sweep.
   const settleY = y + r * 1.2;
   cmds.push(`L ${x.toFixed(1)} ${settleY.toFixed(1)}`);
   y = settleY;
 
-  // Lead-out: sweep from the centre out to the bottom-right corner of the
-  // wrapped span — ends a little above the very bottom edge. With the
-  // wider leadOutHeight band above, this S-curve now has enough vertical
-  // room to open up gradually instead of snapping from vertical to
-  // diagonal.
   {
     const endY = height - leadOutHeight * 0.15;
     const cp1x = x;
@@ -204,148 +197,238 @@ function buildCircularChainPath(width: number, height: number) {
   return cmds.join(" ");
 }
 
-export default function ScrollLine({ children }: { children: ReactNode }) {
+type BeamRefs = {
+  wrapperEl: HTMLDivElement;
+  svgEl: SVGSVGElement;
+  pathEl: SVGPathElement;
+  glowEl: SVGPathElement;
+};
+
+type TrackApi = {
+  register: (id: number, refs: BeamRefs) => void;
+  unregister: (id: number) => void;
+};
+
+const TrackContext = createContext<TrackApi | null>(null);
+
+export function ScrollLineTrack({ children }: { children: ReactNode }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const pathRef = useRef<SVGPathElement>(null);
-  const glowPathRef = useRef<SVGPathElement>(null);
+  const beamsRef = useRef<Map<number, BeamRefs>>(new Map());
+  const stRef = useRef<ScrollTrigger | null>(null);
+  const rafRef = useRef(0);
 
-  useEffect(() => {
+  const build = () => {
     const wrapper = wrapperRef.current;
-    const svg = svgRef.current;
-    const path = pathRef.current;
-    const glowPath = glowPathRef.current;
-    if (!wrapper || !svg || !path || !glowPath) return;
+    if (!wrapper || beamsRef.current.size === 0) return;
 
-    let st: ScrollTrigger | null = null;
-    let ro: ResizeObserver | null = null;
-    let raf = 0;
+    const height = wrapper.offsetHeight;
+    const width = window.innerWidth;
+    if (height < 10) return;
 
-    const build = () => {
-      const height = wrapper.offsetHeight;
-      const width = window.innerWidth;
-      if (height < 10) return;
+    const d = buildCircularChainPath(width, height);
+    const wrapperRect = wrapper.getBoundingClientRect();
 
-      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-      svg.setAttribute("width", String(width));
-      svg.setAttribute("height", String(height));
+    // Offscreen sampler purely to measure total path length for the scrub.
+    const sampler = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path",
+    );
+    sampler.setAttribute("d", d);
+    const totalLength = sampler.getTotalLength();
 
-      const d = buildCircularChainPath(width, height);
-      path.setAttribute("d", d);
-      glowPath.setAttribute("d", d);
+    beamsRef.current.forEach(({ wrapperEl, svgEl, pathEl, glowEl }) => {
+      const sectionRect = wrapperEl.getBoundingClientRect();
+      const offsetTop = sectionRect.top - wrapperRect.top;
+      const sectionHeight = wrapperEl.offsetHeight;
 
-      const length = path.getTotalLength();
-      [path, glowPath].forEach((p) => {
-        p.style.strokeDasharray = `${length}`;
-        p.style.strokeDashoffset = `${length}`;
+      svgEl.setAttribute(
+        "viewBox",
+        `0 ${offsetTop.toFixed(1)} ${width} ${sectionHeight}`,
+      );
+
+      pathEl.setAttribute("d", d);
+      glowEl.setAttribute("d", d);
+
+      [pathEl, glowEl].forEach((p) => {
+        p.style.strokeDasharray = `${totalLength}`;
+        p.style.strokeDashoffset = `${totalLength}`;
       });
+    });
 
-      st?.kill();
-      st = ScrollTrigger.create({
-        trigger: wrapper,
-        start: "top top",
-        end: "bottom bottom",
-        scrub: 1.4, // eased lag rather than a 1:1 linear tie to scroll
-        onUpdate: (self) => {
-          const offset = length * (1 - self.progress);
-          gsap.to([path, glowPath], {
-            strokeDashoffset: offset,
-            ease: "none",
-            duration: 0.3,
-            overwrite: "auto",
-          });
-        },
-      });
+    stRef.current?.kill();
+    stRef.current = ScrollTrigger.create({
+      trigger: wrapper,
+      start: "top top",
+      end: "bottom bottom",
+      scrub: 1.4,
+      onUpdate: (self) => {
+        const offset = totalLength * (1 - self.progress);
+        const targets: SVGPathElement[] = [];
+        beamsRef.current.forEach(({ pathEl, glowEl }) => {
+          targets.push(pathEl, glowEl);
+        });
+        gsap.to(targets, {
+          strokeDashoffset: offset,
+          ease: "none",
+          duration: 0.3,
+          overwrite: "auto",
+        });
+      },
+    });
 
-      ScrollTrigger.refresh();
-    };
+    ScrollTrigger.refresh();
+  };
 
-    raf = requestAnimationFrame(build);
-    const onResize = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(build);
-    };
+  const scheduleRebuild = () => {
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(build);
+  };
+
+  const apiRef = useRef<TrackApi>({
+    register: (id, refs) => {
+      beamsRef.current.set(id, refs);
+      scheduleRebuild();
+    },
+    unregister: (id) => {
+      beamsRef.current.delete(id);
+      scheduleRebuild();
+    },
+  });
+
+  useLayoutEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    scheduleRebuild();
+
+    const onResize = () => scheduleRebuild();
     window.addEventListener("resize", onResize);
 
-    ro = new ResizeObserver(() => onResize());
+    const ro = new ResizeObserver(() => scheduleRebuild());
     ro.observe(wrapper);
 
     return () => {
-      cancelAnimationFrame(raf);
+      cancelAnimationFrame(rafRef.current);
       window.removeEventListener("resize", onResize);
-      ro?.disconnect();
-      st?.kill();
+      ro.disconnect();
+      stRef.current?.kill();
     };
   }, []);
 
   return (
-    <div ref={wrapperRef} style={{ position: "relative", isolation: "isolate" }}>
-      <div
-        ref={overlayRef}
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: Z_INDEX,
-          pointerEvents: "none",
-          overflow: "hidden",
-        }}
-      >
-        <svg
-          ref={svgRef}
-          preserveAspectRatio="none"
-          style={{ display: "block", width: "100%", height: "100%" }}
-        >
-          <defs>
-            <linearGradient
-              id="scroll-line-gradient"
-              x1="0"
-              y1="0"
-              x2="0"
-              y2="1"
-            >
-              <stop offset="0%" stopColor={LINE_COLOR_START} />
-              <stop offset="50%" stopColor={LINE_COLOR_MID} />
-              <stop offset="100%" stopColor={LINE_COLOR_END} />
-            </linearGradient>
-
-            <filter
-              id="scroll-line-glow"
-              x="-60%"
-              y="-60%"
-              width="220%"
-              height="220%"
-            >
-              <feGaussianBlur stdDeviation="9" />
-            </filter>
-          </defs>
-
-          <path
-            ref={glowPathRef}
-            d=""
-            fill="none"
-            stroke="url(#scroll-line-gradient)"
-            strokeWidth={GLOW_WIDTH}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            opacity={0.4}
-            filter="url(#scroll-line-glow)"
-          />
-
-          <path
-            ref={pathRef}
-            d=""
-            fill="none"
-            stroke="url(#scroll-line-gradient)"
-            strokeWidth={STROKE_WIDTH}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+    <TrackContext.Provider value={apiRef.current}>
+      <div ref={wrapperRef} style={{ position: "relative" }}>
+        {children}
       </div>
+    </TrackContext.Provider>
+  );
+}
 
-      {children}
+let beamIdSeq = 0;
+
+/** Place this INSIDE a section, after its background and before its
+ *  foreground content. `zIndex` defaults to 1 — enough to sit above plain
+ *  non-positioned background content; give your foreground content
+ *  z-index 2+ (or just place it after this in JSX) to keep it on top. */
+export function ScrollLineBeam({ zIndex = 1 }: { zIndex?: number }) {
+  const api = useContext(TrackContext);
+  const idRef = useRef<number | null>(null);
+  if (idRef.current === null) idRef.current = beamIdSeq++;
+  const uid = idRef.current;
+
+  const wrapperElRef = useRef<HTMLDivElement>(null);
+  const svgElRef = useRef<SVGSVGElement>(null);
+  const pathElRef = useRef<SVGPathElement>(null);
+  const glowElRef = useRef<SVGPathElement>(null);
+
+  useEffect(() => {
+    if (
+      !api ||
+      !wrapperElRef.current ||
+      !svgElRef.current ||
+      !pathElRef.current ||
+      !glowElRef.current
+    ) {
+      return;
+    }
+    api.register(uid, {
+      wrapperEl: wrapperElRef.current,
+      svgEl: svgElRef.current,
+      pathEl: pathElRef.current,
+      glowEl: glowElRef.current,
+    });
+    return () => api.unregister(uid);
+  }, [api, uid]);
+
+  if (!api) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        "<ScrollLineBeam /> must be rendered inside a <ScrollLineTrack>.",
+      );
+    }
+    return null;
+  }
+
+  const gradientId = `scroll-line-gradient-${uid}`;
+  const glowFilterId = `scroll-line-glow-${uid}`;
+
+  return (
+    <div
+      ref={wrapperElRef}
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        inset: 0,
+        zIndex,
+        pointerEvents: "none",
+        overflow: "hidden",
+      }}
+    >
+      <svg
+        ref={svgElRef}
+        preserveAspectRatio="none"
+        style={{ display: "block", width: "100%", height: "100%" }}
+      >
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={LINE_COLOR_START} />
+            <stop offset="50%" stopColor={LINE_COLOR_MID} />
+            <stop offset="100%" stopColor={LINE_COLOR_END} />
+          </linearGradient>
+
+          <filter
+            id={glowFilterId}
+            x="-60%"
+            y="-60%"
+            width="220%"
+            height="220%"
+          >
+            <feGaussianBlur stdDeviation="14" />
+          </filter>
+        </defs>
+
+        <path
+          ref={glowElRef}
+          d=""
+          fill="none"
+          stroke={`url(#${gradientId})`}
+          strokeWidth={GLOW_WIDTH}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity={0.4}
+          filter={`url(#${glowFilterId})`}
+        />
+
+        <path
+          ref={pathElRef}
+          d=""
+          fill="none"
+          stroke={`url(#${gradientId})`}
+          strokeWidth={STROKE_WIDTH}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
     </div>
   );
 }
