@@ -40,6 +40,16 @@ export default function Interactive3D({ onLanded, onExited }: Props) {
   // i.e. after the pan-out + exit text has actually finished.
   const canLeaveRef = useRef(false);
 
+  useEffect(() => {
+    const unlock = () => {
+      canLeaveRef.current = true;
+    };
+
+    window.addEventListener("returnToMoon", unlock);
+
+    return () => window.removeEventListener("returnToMoon", unlock);
+  }, []);
+
   const handleExit = () => {
     const overlay = overlayRef.current;
     const section = sectionRef.current;
@@ -50,26 +60,9 @@ export default function Interactive3D({ onLanded, onExited }: Props) {
         setGameActive(false);
         setStarted(false);
 
-        // Reset the exit-sequence singleton back to idle. Without this,
-        // exitSequence.phase stays stuck at "done" forever, which makes
-        // Player.tsx refuse all movement and Scene.tsx keep rendering the
-        // frozen ExitSequenceCamera instead of ThirdPersonCamera on any
-        // future replay.
         exitSequence.phase = "idle";
         exitProgress.inside = false;
         exitProgress.progress = 0;
-
-        onExited?.();
-
-        // NOTE: don't reset snappedRef here. Clearing overflow:hidden right
-        // after this triggers a ScrollTrigger refresh while scroll position
-        // is still sitting at the bottom edge of the pinned section
-        // (progress ~1). If snappedRef were false at that instant, the
-        // "snap into game" condition (progress >= 0.98 && !snappedRef)
-        // would immediately fire again and yank the user straight back
-        // into the game with a stale exit-camera pose. snappedRef instead
-        // re-arms naturally via the existing "self.progress < 0.9" check
-        // below, once the user actually scrolls back up into the section.
       },
     });
 
@@ -80,17 +73,20 @@ export default function Interactive3D({ onLanded, onExited }: Props) {
     });
 
     tl.call(() => {
-      // Authorize the hand-off scroll before performing it — this is the
-      // one and only legitimate moment the viewport is allowed to leave
-      // the Interactive3D section.
       canLeaveRef.current = true;
 
-      const next = section.nextElementSibling as HTMLElement | null;
-      const targetY = next
-        ? next.offsetTop
-        : section.offsetTop + section.offsetHeight;
+      onExited?.();
 
-      gsap.set(window, { scrollTo: { y: targetY } });
+      requestAnimationFrame(() => {
+        document.getElementById("about")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      });
+
+      setTimeout(() => {
+        canLeaveRef.current = false;
+      }, 1000);
     });
 
     tl.to(overlay, {
@@ -148,7 +144,6 @@ export default function Interactive3D({ onLanded, onExited }: Props) {
           // Re-lock: if this is a replay (scrolled back up, then down
           // again), the section must be earned again before About is
           // reachable.
-          canLeaveRef.current = false;
 
           setGameActive(true);
           setStarted(true);
@@ -188,6 +183,19 @@ export default function Interactive3D({ onLanded, onExited }: Props) {
           ease: "power2.out",
           overwrite: true,
         });
+      },
+
+      onEnterBack: (self) => {
+        if (!canLeaveRef.current) {
+          gsap.to(window, {
+            scrollTo: {
+              y: self.end - 2,
+            },
+            duration: 0.35,
+            overwrite: true,
+            ease: "power2.out",
+          });
+        }
       },
     });
 

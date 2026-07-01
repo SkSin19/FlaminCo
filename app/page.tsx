@@ -7,10 +7,22 @@ import Hero from "@/sections/Hero";
 import Interactive3D from "@/sections/Interactive3D";
 import Tagline from "@/sections/Tagline";
 import About from "@/sections/About";
+import ReturnSlider from "@/component/About/ReturnSlider";
 
 export default function Home() {
   const [dimmed, setDimmed] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+
+  useEffect(() => {
+    const returnToMoon = () => {
+      setShowAbout(false);
+      setDimmed(true);
+    };
+
+    window.addEventListener("returnToMoon", returnToMoon);
+
+    return () => window.removeEventListener("returnToMoon", returnToMoon);
+  }, []);
 
   useEffect(() => {
     const onLanded = () => setDimmed(true);
@@ -37,9 +49,17 @@ export default function Home() {
         onExited={() => {
           setDimmed(false);
           setShowAbout(true);
+
+          requestAnimationFrame(() => {
+            document.getElementById("about")?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          });
         }}
       />
       {showAbout && <About />}
+      {showAbout && <ReturnSlider />}
     </main>
   );
 }
